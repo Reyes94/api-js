@@ -9,18 +9,35 @@ let myChart;
 async function getMonedas() {
     try {
         const response = await fetch("https://mindicador.cl/api/");
+        if(!response.ok) throw "NO SE PUDO REALIZAR LA SOLICITUD"
         const arrayMonedas = await response.json();
         return arrayMonedas;
     } catch (e) {
-        error.innerHTML = e.message
+        error.innerHTML = e
     }
 }
 
+async function renderGrafica(monedaElegida) {
+    const data = await getMonedasDays(monedaElegida);
+    const config = {
+        type: "line",
+        data
+    };
+    chartDOM.style.backgroundColor = "white";
+    if (myChart) {
+        myChart.destroy();
+    }
+    myChart = new Chart(chartDOM, config);
+}
+
+
 async function conversor(moneda) {
     const data = await getMonedas()
+    if(!data) return
+    renderGrafica(moneda);
     let cantidad = Number(inputCantidad.value)
-    let multiplicacion = (cantidad * data[moneda].valor).toFixed(2)
-    conversion.innerHTML = `<p>Resultado: $ ${multiplicacion}</p>`
+    let division = (cantidad / data[moneda].valor).toFixed(2)
+    conversion.innerHTML = `<p>Resultado: $ ${division}</p>`
 }
 
 async function getMonedasDays(monedaElegida) {
@@ -28,12 +45,8 @@ async function getMonedasDays(monedaElegida) {
         const response = await fetch("https://mindicador.cl/api/" + monedaElegida);
         const arrayMonedas = await response.json();
         const ultimosDias = arrayMonedas.serie.slice(0, 10).reverse()
-        const labels = ultimosDias.map((dia) => {
-            return dia.fecha;
-        });
-        const data = ultimosDias.map((dia) => {
-            return dia.valor;
-        });
+        const labels = ultimosDias.map((dia) => dia.fecha.split("T")[0].split("-").reverse().join("-"));
+        const data = ultimosDias.map((dia) => dia.valor);
         const datasets = [
             {
                 label: monedaElegida,
@@ -48,30 +61,16 @@ async function getMonedasDays(monedaElegida) {
     }
 }
 
-async function renderGrafica(monedaElegida) {
-    const data = await getMonedasDays(monedaElegida);
-    const config = {
-        type: "line",
-        data
-    };
-    chartDOM.style.backgroundColor = "white";
-    if (myChart) {
-        myChart.destroy(); //FUNCION PARA ACTUALIZAR EL GRAFICO SI SE CAMBIA EL TIPO DE MONEDA
-    }
-    myChart = new Chart(chartDOM, config);
-}
-
-
 btnBuscar.addEventListener("click", () => {
-    if(inputCantidad.value == ""){
+    if (inputCantidad.value == "") {
         conversion.textContent = "Ingresa un dato válido"
-        return 
-    } 
-    if(inputCantidad.value <0){
-        conversion.textContent = "Sólo puedes ingresar números positivos"
-        return 
+        myChart.clear();
+        return
     }
-    let resultado = conversor(tipoMoneda.options[tipoMoneda.selectedIndex].value);
-    renderGrafica(tipoMoneda.options[tipoMoneda.selectedIndex].value);
+    if (inputCantidad.value < 0) {
+        conversion.textContent = "Sólo puedes ingresar números positivos"
+        return
+    } 
+    conversor(tipoMoneda.options[tipoMoneda.selectedIndex].value)  
 })
 

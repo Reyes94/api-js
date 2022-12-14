@@ -36,6 +36,18 @@ button {
     text-align: center;
 }
 
+.alerta{
+    color: red;
+    text-decoration: underline;
+}
+
 .btn {
     padding-top: 1rem;
+}
+
+.grafico{
+    position: relative; 
+    height:40vh; 
+   display: flex;
+   justify-content: center;
 }
